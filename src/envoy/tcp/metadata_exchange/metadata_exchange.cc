@@ -78,11 +78,14 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
                                                      bool) {
   switch (conn_state_) {
     case Invalid:
+      std::cout << "[Ying] 1\n";
       FALLTHRU;
     case Done:
+      std::cout << "[Ying] 2\n";
       // No work needed if connection state is Done or Invalid.
       return Network::FilterStatus::Continue;
     case ConnProtocolNotRead: {
+      std::cout << "[Ying] 3\n";
       // If Alpn protocol is not the expected one, then return.
       // Else find and write node metadata.
       if (read_callbacks_->connection().nextProtocol() != config_->protocol_) {
@@ -99,6 +102,7 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     case WriteMetadata: {
+      std::cout << "[Ying] 4\n";
       // TODO(gargnupur): Try to move this just after alpn protocol is
       // determined and first onData is called in Downstream filter.
       // If downstream filter, write metadata.
@@ -107,7 +111,9 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     case ReadingInitialHeader:
+      std::cout << "[Ying] 5\n";
     case NeedMoreDataInitialHeader: {
+      std::cout << "[Ying] 6\n";
       tryReadInitialProxyHeader(data);
       if (conn_state_ == NeedMoreDataInitialHeader) {
         return Network::FilterStatus::StopIteration;
@@ -118,7 +124,9 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     case ReadingProxyHeader:
+      std::cout << "[Ying] 8\n";
     case NeedMoreDataProxyHeader: {
+      std::cout << "[Ying] 9\n";
       tryReadProxyData(data);
       if (conn_state_ == NeedMoreDataProxyHeader) {
         return Network::FilterStatus::StopIteration;
@@ -129,6 +137,7 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     default:
+      std::cout << "[Ying] 10\n";
       conn_state_ = Done;
       return Network::FilterStatus::Continue;
   }
@@ -143,10 +152,13 @@ Network::FilterStatus MetadataExchangeFilter::onNewConnection() {
 Network::FilterStatus MetadataExchangeFilter::onWrite(Buffer::Instance&, bool) {
   switch (conn_state_) {
     case Invalid:
+      std::cout << "[Ying] 11\n";
     case Done:
+      std::cout << "[Ying] 12\n";
       // No work needed if connection state is Done or Invalid.
       return Network::FilterStatus::Continue;
     case ConnProtocolNotRead: {
+      std::cout << "[Ying] 13\n";
       if (read_callbacks_->connection().nextProtocol() != config_->protocol_) {
         ENVOY_LOG(trace, "Alpn Protocol Not Found. Expected {}, Got {}",
                   config_->protocol_,
@@ -162,15 +174,20 @@ Network::FilterStatus MetadataExchangeFilter::onWrite(Buffer::Instance&, bool) {
       FALLTHRU;
     }
     case WriteMetadata: {
+      std::cout << "[Ying] 14\n";
       // TODO(gargnupur): Try to move this just after alpn protocol is
       // determined and first onWrite is called in Upstream filter.
       writeNodeMetadata();
       FALLTHRU;
     }
     case ReadingInitialHeader:
+      std::cout << "[Ying] 15\n";
     case ReadingProxyHeader:
+      std::cout << "[Ying] 16\n";
     case NeedMoreDataInitialHeader:
+      std::cout << "[Ying] 17\n";
     case NeedMoreDataProxyHeader:
+      std::cout << "[Ying] 18\n";
       // These are to be handled in Reading Pipeline.
       return Network::FilterStatus::Continue;
   }
