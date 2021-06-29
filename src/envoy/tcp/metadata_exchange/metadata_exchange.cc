@@ -76,13 +76,18 @@ MetadataExchangeConfig::MetadataExchangeConfig(
 
 Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
                                                      bool) {
+  std::cout << "[Ying] entering onData: " << data.toString() << "\n";
+  std::cout << "[Ying] entering onData2: " << data.toString() << "\n";
   switch (conn_state_) {
     case Invalid:
+      std::cout << "[Ying] 1: " << data.toString() << "\n";
       FALLTHRU;
     case Done:
+      std::cout << "[Ying] 2: " << data.toString() << "\n";
       // No work needed if connection state is Done or Invalid.
       return Network::FilterStatus::Continue;
     case ConnProtocolNotRead: {
+      std::cout << "[Ying] 3: " << data.toString() << "\n";
       // If Alpn protocol is not the expected one, then return.
       // Else find and write node metadata.
       if (read_callbacks_->connection().nextProtocol() != config_->protocol_) {
@@ -99,6 +104,7 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     case WriteMetadata: {
+      std::cout << "[Ying] 4: " << data.toString() << "\n";
       // TODO(gargnupur): Try to move this just after alpn protocol is
       // determined and first onData is called in Downstream filter.
       // If downstream filter, write metadata.
@@ -107,7 +113,9 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     case ReadingInitialHeader:
+      std::cout << "[Ying] 5: " << data.toString() << "\n";
     case NeedMoreDataInitialHeader: {
+      std::cout << "[Ying] 6: " << data.toString() << "\n";
       tryReadInitialProxyHeader(data);
       if (conn_state_ == NeedMoreDataInitialHeader) {
         return Network::FilterStatus::StopIteration;
@@ -118,7 +126,9 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     case ReadingProxyHeader:
+      std::cout << "[Ying] 7: " << data.toString() << "\n";
     case NeedMoreDataProxyHeader: {
+      std::cout << "[Ying] 8: " << data.toString() << "\n";
       tryReadProxyData(data);
       if (conn_state_ == NeedMoreDataProxyHeader) {
         return Network::FilterStatus::StopIteration;
@@ -129,6 +139,7 @@ Network::FilterStatus MetadataExchangeFilter::onData(Buffer::Instance& data,
       FALLTHRU;
     }
     default:
+      std::cout << "[Ying] 9: " << data.toString() << "\n";
       conn_state_ = Done;
       return Network::FilterStatus::Continue;
   }
@@ -143,10 +154,13 @@ Network::FilterStatus MetadataExchangeFilter::onNewConnection() {
 Network::FilterStatus MetadataExchangeFilter::onWrite(Buffer::Instance&, bool) {
   switch (conn_state_) {
     case Invalid:
+      std::cout << "[Ying] 10\n";
     case Done:
+      std::cout << "[Ying] 11\n";
       // No work needed if connection state is Done or Invalid.
       return Network::FilterStatus::Continue;
     case ConnProtocolNotRead: {
+      std::cout << "[Ying] 12\n";
       if (read_callbacks_->connection().nextProtocol() != config_->protocol_) {
         ENVOY_LOG(trace, "Alpn Protocol Not Found. Expected {}, Got {}",
                   config_->protocol_,
@@ -162,19 +176,25 @@ Network::FilterStatus MetadataExchangeFilter::onWrite(Buffer::Instance&, bool) {
       FALLTHRU;
     }
     case WriteMetadata: {
+      std::cout << "[Ying] 13\n";
       // TODO(gargnupur): Try to move this just after alpn protocol is
       // determined and first onWrite is called in Upstream filter.
       writeNodeMetadata();
       FALLTHRU;
     }
     case ReadingInitialHeader:
+      std::cout << "[Ying] 14\n";
     case ReadingProxyHeader:
+      std::cout << "[Ying] 15\n";
     case NeedMoreDataInitialHeader:
+      std::cout << "[Ying] 16\n";
     case NeedMoreDataProxyHeader:
+      std::cout << "[Ying] 17\n";
       // These are to be handled in Reading Pipeline.
       return Network::FilterStatus::Continue;
   }
 
+  std::cout << "[Ying] 18\n";
   return Network::FilterStatus::Continue;
 }
 
@@ -264,16 +284,19 @@ void MetadataExchangeFilter::tryReadProxyData(Buffer::Instance& data) {
   }
   data.drain(proxy_data_length_);
 
+  std::cout << "[Ying] tryReadProxyData: " << proxy_data_buf <<"\n";
   // Set Metadata
   Envoy::ProtobufWkt::Struct value_struct =
       Envoy::MessageUtil::anyConvert<Envoy::ProtobufWkt::Struct>(proxy_data);
   auto key_metadata_it = value_struct.fields().find(ExchangeMetadataHeader);
   if (key_metadata_it != value_struct.fields().end()) {
+    std::cout << "[Ying] updating peer" <<"\n";
     updatePeer(key_metadata_it->second.struct_value());
   }
   const auto key_metadata_id_it =
       value_struct.fields().find(ExchangeMetadataHeaderId);
   if (key_metadata_id_it != value_struct.fields().end()) {
+    std::cout << "[Ying] updating peer id" <<"\n";
     Envoy::ProtobufWkt::Value val = key_metadata_id_it->second;
     updatePeerId(config_->filter_direction_ == FilterDirection::Downstream
                      ? ::Wasm::Common::kDownstreamMetadataIdKey
