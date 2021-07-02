@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <iostream>
+
 
 #include "extensions/common/context.h"
 
@@ -222,6 +224,7 @@ flatbuffers::DetachedBuffer extractLocalNodeFlatBuffer() {
   std::vector<flatbuffers::Offset<flatbuffers::String>> app_containers;
   std::string value;
   if (getValue({"node", "metadata", "NAME"}, &value)) {
+    std::cout << "local node metadata name" << fbb.CreateString(value) << "\n";
     name = fbb.CreateString(value);
   }
   if (getValue({"node", "metadata", "NAMESPACE"}, &value)) {
