@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <string>
 
 #include "extensions/stats/plugin.h"
 
@@ -55,24 +56,33 @@ void map_node(IstioDimensions& instance, bool is_source,
               const ::Wasm::Common::FlatNode& node) {
   // Ensure all properties are set (and cleared when necessary).
   if (is_source) {
-    instance[source_workload] = GetStringView(node.workload_name());
+  logInfo("map_node 1");
+
+  instance[source_workload] = GetStringView(node.workload_name());
     instance[source_workload_namespace] = GetStringView(node.namespace_());
+  logInfo("map_node 2");
 
     auto source_labels = node.labels();
-    if (source_labels) {
+  logInfo("map_node 3");
+
+  if (source_labels) {
       auto app_iter = source_labels->LookupByKey("app");
       auto app = app_iter ? app_iter->value() : nullptr;
       instance[source_app] = GetStringView(app);
 
-      auto version_iter = source_labels->LookupByKey("version");
+  logInfo("map_node 4");
+
+  auto version_iter = source_labels->LookupByKey("version");
       auto version = version_iter ? version_iter->value() : nullptr;
       instance[source_version] = GetStringView(version);
+  logInfo("map_node 5");
 
       auto canonical_name = source_labels->LookupByKey(
           ::Wasm::Common::kCanonicalServiceLabelName.data());
       auto name =
           canonical_name ? canonical_name->value() : node.workload_name();
       instance[source_canonical_service] = GetStringView(name);
+  logInfo("map_node 6");
 
       auto rev = source_labels->LookupByKey(
           ::Wasm::Common::kCanonicalServiceRevisionLabelName.data());
@@ -82,20 +92,27 @@ void map_node(IstioDimensions& instance, bool is_source,
         instance[source_canonical_revision] = ::Wasm::Common::kLatest.data();
       }
     } else {
-      instance[source_app] = "";
+  logInfo("map_node 7");
+
+  instance[source_app] = "";
       instance[source_version] = "";
       instance[source_canonical_service] = "";
       instance[source_canonical_revision] = ::Wasm::Common::kLatest.data();
     }
   } else {
-    instance[destination_workload] = GetStringView(node.workload_name());
+  logInfo("map_node 8");
+
+  instance[destination_workload] = GetStringView(node.workload_name());
     instance[destination_workload_namespace] = GetStringView(node.namespace_());
 
     auto destination_labels = node.labels();
-    if (destination_labels) {
+  logInfo("map_node 9");
+
+  if (destination_labels) {
       auto app_iter = destination_labels->LookupByKey("app");
       auto app = app_iter ? app_iter->value() : nullptr;
       instance[destination_app] = GetStringView(app);
+  logInfo("map_node 10");
 
       auto version_iter = destination_labels->LookupByKey("version");
       auto version = version_iter ? version_iter->value() : nullptr;
@@ -106,6 +123,7 @@ void map_node(IstioDimensions& instance, bool is_source,
       auto name =
           canonical_name ? canonical_name->value() : node.workload_name();
       instance[destination_canonical_service] = GetStringView(name);
+  logInfo("map_node 11");
 
       auto rev = destination_labels->LookupByKey(
           ::Wasm::Common::kCanonicalServiceRevisionLabelName.data());
@@ -116,13 +134,18 @@ void map_node(IstioDimensions& instance, bool is_source,
             ::Wasm::Common::kLatest.data();
       }
     } else {
-      instance[destination_app] = "";
+  logInfo("map_node 12");
+
+  instance[destination_app] = "";
       instance[destination_version] = "";
       instance[destination_canonical_service] = "";
       instance[destination_canonical_revision] = ::Wasm::Common::kLatest.data();
     }
+  logInfo("map_node 13");
 
     instance[destination_service_namespace] = GetStringView(node.namespace_());
+  logInfo("map_node 14");
+
   }
 }
 
@@ -145,24 +168,35 @@ void map_unknown_if_empty(IstioDimensions& instance) {
 // local node derived dimensions are already filled in.
 void map_request(IstioDimensions& instance,
                  const ::Wasm::Common::RequestInfo& request) {
+  logInfo("map_request 1");
+
   instance[source_principal] = request.source_principal;
   instance[destination_principal] = request.destination_principal;
   instance[destination_service] = request.destination_service_host;
   instance[destination_service_name] = request.destination_service_name;
+  logInfo("map_request 2");
   instance[request_protocol] =
       ::Wasm::Common::ProtocolString(request.request_protocol);
   instance[response_code] = std::to_string(request.response_code);
   instance[response_flags] = request.response_flag;
+  logInfo("map_request 3");
   instance[connection_security_policy] = absl::AsciiStrToLower(std::string(
       ::Wasm::Common::AuthenticationPolicyString(request.service_auth_policy)));
+  logInfo("map_request 4");
 }
 
 // maps peer_node and request to dimensions.
 void map(IstioDimensions& instance, bool outbound,
          const ::Wasm::Common::FlatNode& peer_node,
          const ::Wasm::Common::RequestInfo& request) {
+  logInfo("before map peer");
+
   map_peer(instance, outbound, peer_node);
+  logInfo("before map request");
+
   map_request(instance, request);
+  logInfo("before map unknown");
+
   map_unknown_if_empty(instance);
   if (request.request_protocol == Protocol::GRPC) {
     instance[grpc_response_status] = std::to_string(request.grpc_status);
@@ -550,7 +584,9 @@ bool PluginRootContext::onDone() {
 }
 
 void PluginRootContext::onTick() {
+logInfo("entering onTick()");
   if (request_queue_.empty()) {
+  logInfo("request_queue_ empty");
     return;
   }
   for (auto const& item : request_queue_) {
@@ -569,19 +605,27 @@ void PluginRootContext::onTick() {
 
 void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
                                bool end_stream) {
+logInfo("entering report");
   // HTTP peer metadata should be done by the time report is called for a
   // request info. TCP metadata might still be awaiting.
   // Upstream host should be selected for metadata fallback.
   Wasm::Common::PeerNodeInfo peer_node_info(peer_metadata_id_key_,
                                             peer_metadata_key_);
   if (request_info.request_protocol == Protocol::TCP) {
+  logInfo("tcp protocol");
+  logInfo(peer_metadata_id_key_);
+  logInfo(peer_metadata_key_);
     // For TCP, if peer metadata is not available, peer id is set as not found.
     // Otherwise, we wait for metadata exchange to happen before we report any
     // metric, until the end.
     if (peer_node_info.maybeWaiting() && !end_stream) {
+    logInfo("wait");
       return;
     }
+  logInfo("before populateTCPRequestInfo");
     ::Wasm::Common::populateTCPRequestInfo(outbound_, &request_info);
+  logInfo("after populateTCPRequestInfo");
+
   } else {
     // Populate HTTP request info fully only at the end of the stream because
     // onTick context has no access to request/response headers but can read
@@ -600,7 +644,9 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
 
   map(istio_dimensions_, outbound_, peer_node_info.get(), request_info);
 
-  for (size_t i = 0; i < expressions_.size(); i++) {
+logInfo("after map");
+
+for (size_t i = 0; i < expressions_.size(); i++) {
     if (!evaluateExpression(expressions_[i].token,
                             &istio_dimensions_.at(count_standard_labels + i))) {
       LOG_TRACE(absl::StrCat("Failed to evaluate expression: <",
@@ -608,6 +654,8 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
       istio_dimensions_[count_standard_labels + i] = "unknown";
     }
   }
+
+logInfo("12345");
 
   auto stats_it = metrics_.find(istio_dimensions_);
   if (stats_it != metrics_.end()) {
@@ -626,7 +674,9 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
     return;
   }
 
-  std::vector<SimpleStat> stats;
+logInfo("789");
+
+std::vector<SimpleStat> stats;
   for (auto& statgen : stats_) {
     if (!statgen.matchesProtocol(request_info.request_protocol)) {
       continue;
@@ -641,8 +691,12 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
     stats.push_back(stat);
   }
 
-  incrementMetric(cache_misses_, 1);
+logInfo("aaaaa");
+
+incrementMetric(cache_misses_, 1);
   metrics_.try_emplace(istio_dimensions_, stats);
+logInfo("bbbbb");
+
 }
 
 void PluginRootContext::addToRequestQueue(
