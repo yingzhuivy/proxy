@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <string>
 
 #include "extensions/stats/plugin.h"
 
@@ -550,7 +551,9 @@ bool PluginRootContext::onDone() {
 }
 
 void PluginRootContext::onTick() {
+logInfo("entering onTick()");
   if (request_queue_.empty()) {
+  logInfo("request_queue_ empty");
     return;
   }
   for (auto const& item : request_queue_) {
@@ -569,16 +572,21 @@ void PluginRootContext::onTick() {
 
 void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
                                bool end_stream) {
+logInfo("entering report");
   // HTTP peer metadata should be done by the time report is called for a
   // request info. TCP metadata might still be awaiting.
   // Upstream host should be selected for metadata fallback.
   Wasm::Common::PeerNodeInfo peer_node_info(peer_metadata_id_key_,
                                             peer_metadata_key_);
   if (request_info.request_protocol == Protocol::TCP) {
+  logInfo("tcp protocol");
+  logInfo(peer_metadata_id_key_);
+  logInfo(peer_metadata_key_);
     // For TCP, if peer metadata is not available, peer id is set as not found.
     // Otherwise, we wait for metadata exchange to happen before we report any
     // metric, until the end.
     if (peer_node_info.maybeWaiting() && !end_stream) {
+    logInfo("wait");
       return;
     }
     ::Wasm::Common::populateTCPRequestInfo(outbound_, &request_info);
