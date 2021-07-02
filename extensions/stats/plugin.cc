@@ -12,6 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <string>
 
 #include "extensions/stats/plugin.h"
 
@@ -550,7 +551,9 @@ bool PluginRootContext::onDone() {
 }
 
 void PluginRootContext::onTick() {
+logInfo("entering onTick()");
   if (request_queue_.empty()) {
+  logInfo("request_queue_ empty");
     return;
   }
   for (auto const& item : request_queue_) {
@@ -569,19 +572,27 @@ void PluginRootContext::onTick() {
 
 void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
                                bool end_stream) {
+logInfo("entering report");
   // HTTP peer metadata should be done by the time report is called for a
   // request info. TCP metadata might still be awaiting.
   // Upstream host should be selected for metadata fallback.
   Wasm::Common::PeerNodeInfo peer_node_info(peer_metadata_id_key_,
                                             peer_metadata_key_);
   if (request_info.request_protocol == Protocol::TCP) {
+  logInfo("tcp protocol");
+  logInfo(peer_metadata_id_key_);
+  logInfo(peer_metadata_key_);
     // For TCP, if peer metadata is not available, peer id is set as not found.
     // Otherwise, we wait for metadata exchange to happen before we report any
     // metric, until the end.
     if (peer_node_info.maybeWaiting() && !end_stream) {
+    logInfo("wait");
       return;
     }
+  logInfo("before populateTCPRequestInfo");
     ::Wasm::Common::populateTCPRequestInfo(outbound_, &request_info);
+  logInfo("after populateTCPRequestInfo");
+
   } else {
     // Populate HTTP request info fully only at the end of the stream because
     // onTick context has no access to request/response headers but can read
@@ -600,7 +611,9 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
 
   map(istio_dimensions_, outbound_, peer_node_info.get(), request_info);
 
-  for (size_t i = 0; i < expressions_.size(); i++) {
+logInfo("after map");
+
+for (size_t i = 0; i < expressions_.size(); i++) {
     if (!evaluateExpression(expressions_[i].token,
                             &istio_dimensions_.at(count_standard_labels + i))) {
       LOG_TRACE(absl::StrCat("Failed to evaluate expression: <",
@@ -608,6 +621,8 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
       istio_dimensions_[count_standard_labels + i] = "unknown";
     }
   }
+
+logInfo("12345");
 
   auto stats_it = metrics_.find(istio_dimensions_);
   if (stats_it != metrics_.end()) {
@@ -626,7 +641,9 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
     return;
   }
 
-  std::vector<SimpleStat> stats;
+logInfo("789");
+
+std::vector<SimpleStat> stats;
   for (auto& statgen : stats_) {
     if (!statgen.matchesProtocol(request_info.request_protocol)) {
       continue;
@@ -641,8 +658,12 @@ void PluginRootContext::report(::Wasm::Common::RequestInfo& request_info,
     stats.push_back(stat);
   }
 
-  incrementMetric(cache_misses_, 1);
+logInfo("aaaaa");
+
+incrementMetric(cache_misses_, 1);
   metrics_.try_emplace(istio_dimensions_, stats);
+logInfo("bbbbb");
+
 }
 
 void PluginRootContext::addToRequestQueue(
