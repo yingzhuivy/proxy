@@ -14,6 +14,7 @@
  */
 
 #pragma once
+#include <string>
 
 #include <unordered_map>
 
@@ -178,6 +179,7 @@ class StatGen {
         metric_(metric_factory.type,
                 absl::StrCat(stat_prefix, metric_factory.name), tags,
                 field_separator, value_separator) {
+  logInfo("????????");
     if (tags.size() != indexes.size()) {
       logAbort("metric tags.size() != indexes.size()");
     }
@@ -233,6 +235,7 @@ class PluginRootContext : public RootContext {
  public:
   PluginRootContext(uint32_t id, std::string_view root_id, bool is_outbound)
       : RootContext(id, root_id), outbound_(is_outbound) {
+  logInfo("creating plugin root context");
     Metric cache_count(MetricType::Counter, "metric_cache_count",
                        {MetricTag{"wasm_filter", MetricTag::TagType::String},
                         MetricTag{"cache", MetricTag::TagType::String}});
@@ -325,7 +328,9 @@ class PluginRootContextInbound : public PluginRootContext {
 // Per-stream context.
 class PluginContext : public Context {
  public:
-  explicit PluginContext(uint32_t id, RootContext* root) : Context(id, root) {}
+  explicit PluginContext(uint32_t id, RootContext* root) : Context(id, root) {
+    logInfo("creating PluginContext");
+  }
 
   // Called for both HTTP and TCP streams, as a final data callback.
   void onLog() override {
@@ -366,11 +371,13 @@ class PluginContext : public Context {
 
   // Called on onData call, so counting the data that is received.
   FilterStatus onDownstreamData(size_t size, bool) override {
+    logInfo("onDownstreamData " + std::to_string(size));
     request_info_.tcp_received_bytes += size;
     return FilterStatus::Continue;
   }
   // Called on onWrite call, so counting the data that is sent.
   FilterStatus onUpstreamData(size_t size, bool) override {
+    logInfo("onUpstreamData " + std::to_string(size));
     request_info_.tcp_sent_bytes += size;
     return FilterStatus::Continue;
   }
