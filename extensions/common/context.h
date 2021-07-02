@@ -249,7 +249,12 @@ class PeerNodeInfo {
   // Maybe waiting indicates that the metadata is not found but may arrive
   // later.
   bool maybeWaiting() const {
-    return !found_ && peer_id_ != ::Wasm::Common::kMetadataNotFoundValue;
+  std::cout << "entering maybeWaiting" << "\n";
+  std::cout << "found?" << found_ ? "true":"false" << "\n";
+  std::cout << "peer_id:" << peer_id_  << "\n";
+  std::cout << "peer_node:" << peer_node_  << "\n";
+
+  return !found_ && peer_id_ != ::Wasm::Common::kMetadataNotFoundValue;
   }
 
  private:
